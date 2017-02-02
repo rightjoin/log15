@@ -79,6 +79,29 @@ func TerminalFormat() Format {
 	})
 }
 
+func TermNoColorFormat() Format {
+	return FormatFunc(func(r *Record) []byte {
+		var color = 0
+
+		b := &bytes.Buffer{}
+		lvl := strings.ToUpper(r.Lvl.String())
+		if color > 0 {
+			fmt.Fprintf(b, "\x1b[%dm%s\x1b[0m[%s] %s ", color, lvl, r.Time.Format(termTimeFormat), r.Msg)
+		} else {
+			fmt.Fprintf(b, "[%s] [%s] %s ", lvl, r.Time.Format(termTimeFormat), r.Msg)
+		}
+
+		// try to justify the log output for short messages
+		if len(r.Ctx) > 0 && len(r.Msg) < termMsgJust {
+			b.Write(bytes.Repeat([]byte{' '}, termMsgJust-len(r.Msg)))
+		}
+
+		// print the keys logfmt style
+		logfmt(b, r.Ctx, color)
+		return b.Bytes()
+	})
+}
+
 // LogfmtFormat prints records in logfmt format, an easy machine-parseable but human-readable
 // format for key/value pairs.
 //
